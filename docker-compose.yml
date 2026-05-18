@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: fintech_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+      - user-service
+
+  auth-service:
+    build: ./auth-service
+    environment:
+      - DB_HOST=postgres
+      - JWT_SECRET=supersecretkey123
+      - MONITOR_URL=http://monitor-service:3005
+
+  user-service:
+    build: ./user-service
+    environment:
+      - DB_HOST=postgres
+      - JWT_SECRET=supersecretkey123
+      - MONITOR_URL=http://monitor-service:3005
+
+  monitor-service:
+    build: ./monitor-service
+    ports:
+      - "3005:3005"
