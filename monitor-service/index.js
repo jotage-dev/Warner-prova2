@@ -11,7 +11,6 @@ app.use(cors());
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-// Configuração do Winston (Log Forense)
 const logger = winston.createLogger({
   level: "info",
   format: winston.format.combine(
@@ -24,11 +23,9 @@ const logger = winston.createLogger({
   ],
 });
 
-// Endpoint receptor de logs (SIEM simplificado)
 app.post("/log", (req, res) => {
   const data = req.body;
 
-  // Regras do SIEM
   if (data.event === "auth_failure" && data.attempts > 3) {
     logger.warn(
       `ALERTA: Possível ataque de Força Bruta detectado no email: ${data.email}`,
@@ -63,7 +60,7 @@ app.post("/log", (req, res) => {
   }
 
   logger.info("Auditoria", data);
-  io.emit("new_log", data); // Envia log para o dashboard
+  io.emit("new_log", data); 
   res.sendStatus(200);
 });
 

@@ -7,7 +7,6 @@ const axios = require("axios");
 const app = express();
 app.use(express.json());
 
-// 🕵️ MIDDLEWARE ESPIÃO: Mostra EXATAMENTE o que chegou no microsserviço
 app.use((req, res, next) => {
   console.log(
     `\n🕵️ [AUTH-SERVICE] Recebeu requisição: ${req.method} ${req.url}`,
@@ -23,20 +22,16 @@ const pool = new Pool({
   port: 5432,
 });
 
-// 🛡️ FUNÇÃO RESET DE BANCO: Injeta usuários de teste com hashes 100% confiáveis via Node.js
 async function ajustarSenhaNoBanco() {
   try {
     console.log(
       "⏳ [DATABASE] Limpando e reinjetando usuários de teste com Bcrypt...",
     );
 
-    // Limpa a tabela antiga para não duplicar ou manter dados corrompidos
     await pool.query("TRUNCATE TABLE users RESTART IDENTITY CASCADE;");
 
-    // Gera o hash perfeito para a senha '123456'
     const hashPerfeito = await bcrypt.hash("123456", 10);
 
-    // Injeta o Admin e o Usuário Comum diretamente
     await pool.query(
       `INSERT INTO users (name, email, password, role) VALUES 
        ($1, $2, $3, $4),
@@ -61,12 +56,10 @@ async function ajustarSenhaNoBanco() {
   }
 }
 
-// Executa a inicialização 3 segundos após o serviço ligar (tempo para o Postgres estabilizar)
 setTimeout(ajustarSenhaNoBanco, 3000);
 
 const failedAttempts = new Map();
 
-// Aceita qualquer uma das duas rotas
 app.post(["/login", "/auth/login"], async (req, res) => {
   const { email, password } = req.body;
   const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
@@ -83,7 +76,6 @@ app.post(["/login", "/auth/login"], async (req, res) => {
       return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
-    // O Bcrypt compara a senha digitada com o hash gerado no banco
     const senhaValida = await bcrypt.compare(password, user.password);
 
     if (!senhaValida) {
@@ -122,7 +114,6 @@ app.post(["/login", "/auth/login"], async (req, res) => {
   }
 });
 
-// ❌ CAPTURADOR DE 404 CUSTOMIZADO
 app.use((req, res) => {
   console.log(
     `❌ [AUTH-SERVICE] Rota ignorada (404). O Gateway mandou: ${req.url}`,

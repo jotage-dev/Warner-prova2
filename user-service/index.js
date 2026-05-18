@@ -14,7 +14,6 @@ const pool = new Pool({
   port: 5432,
 });
 
-// Middleware de Autenticação e RBAC
 const authorize = (roles = []) => {
   return (req, res, next) => {
     const token = req.headers["authorization"]?.split(" ")[1];
@@ -42,8 +41,7 @@ const authorize = (roles = []) => {
   };
 };
 
-// 🔴 CENÁRIO 1: SQL INJECTION (VULNERÁVEL)
-// Aceita tanto com quanto sem o prefixo /users
+
 app.get(
   ["/vulnerable-search", "/users/vulnerable-search"],
   async (req, res) => {
@@ -78,7 +76,6 @@ app.get(["/secure-search", "/users/secure-search"], async (req, res) => {
   }
 });
 
-// CENÁRIO 2: ACESSO ADMIN & PAM
 app.post(
   ["/admin/pam-session", "/users/admin/pam-session"],
   authorize(["admin"]),

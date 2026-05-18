@@ -9,7 +9,6 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 
-// Prevenção de Força Bruta no Gateway
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -17,13 +16,12 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Roteamento corrigido com pathRewrite
 app.use(
   "/auth",
   createProxyMiddleware({
     target: "http://auth-service:3001",
     changeOrigin: true,
-    pathRewrite: { "^/auth": "" }, // Corta o "/auth" antes de mandar pro serviço
+    pathRewrite: { "^/auth": "" }, 
   }),
 );
 
@@ -32,7 +30,7 @@ app.use(
   createProxyMiddleware({
     target: "http://user-service:3002",
     changeOrigin: true,
-    pathRewrite: { "^/users": "" }, // Corta o "/users" antes de mandar pro serviço
+    pathRewrite: { "^/users": "" }, 
   }),
 );
 
