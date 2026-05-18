@@ -43,27 +43,30 @@ const authorize = (roles = []) => {
 };
 
 // 🔴 CENÁRIO 1: SQL INJECTION (VULNERÁVEL)
-// Exemplo de ataque: /vulnerable-search?email=admin@fintech.com' OR '1'='1
-app.get("/vulnerable-search", async (req, res) => {
-  const email = req.query.email;
-  axios
-    .post(`${process.env.MONITOR_URL}/log`, {
-      event: "sql_injection_detected",
-      payload: email,
-    })
-    .catch(() => {});
+// Aceita tanto com quanto sem o prefixo /users
+app.get(
+  ["/vulnerable-search", "/users/vulnerable-search"],
+  async (req, res) => {
+    const email = req.query.email;
+    axios
+      .post(`${process.env.MONITOR_URL}/log`, {
+        event: "sql_injection_detected",
+        payload: email,
+      })
+      .catch(() => {});
 
-  try {
-    const query = `SELECT id, name, email, role FROM users WHERE email='${email}'`;
-    const result = await pool.query(query);
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+    try {
+      const query = `SELECT id, name, email, role FROM users WHERE email='${email}'`;
+      const result = await pool.query(query);
+      res.json(result.rows);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+);
 
 // 🟢 CENÁRIO 1: PREVENÇÃO DE SQL INJECTION (SEGURO)
-app.get("/secure-search", async (req, res) => {
+app.get(["/secure-search", "/users/secure-search"], async (req, res) => {
   try {
     const result = await pool.query(
       "SELECT id, name, email, role FROM users WHERE email = $1",
@@ -76,21 +79,28 @@ app.get("/secure-search", async (req, res) => {
 });
 
 // CENÁRIO 2: ACESSO ADMIN & PAM
-app.post("/admin/pam-session", authorize(["admin"]), (req, res) => {
-  const sessionToken = jwt.sign(
-    { user: req.user.email, access: "database", pam: true },
-    process.env.JWT_SECRET,
-    { expiresIn: "10m" },
-  );
+app.post(
+  ["/admin/pam-session", "/users/admin/pam-session"],
+  authorize(["admin"]),
+  (req, res) => {
+    const sessionToken = jwt.sign(
+      { user: req.user.email, access: "database", pam: true },
+      process.env.JWT_SECRET,
+      { expiresIn: "10m" },
+    );
 
-  axios
-    .post(`${process.env.MONITOR_URL}/log`, {
-      event: "pam_session_created",
-      email: req.user.email,
-    })
-    .catch(() => {});
+    axios
+      .post(`${process.env.MONITOR_URL}/log`, {
+        event: "pam_session_created",
+        email: req.user.email,
+      })
+      .catch(() => {});
 
-  res.json({ message: "Sessão privilegiada temporária criada", sessionToken });
-});
+    res.json({
+      message: "Sessão privilegiada temporária criada",
+      sessionToken,
+    });
+  },
+);
 
 app.listen(3002, () => console.log("User Service na porta 3002"));

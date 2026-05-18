@@ -17,19 +17,22 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Roteamento
+// Roteamento corrigido com pathRewrite
 app.use(
   "/auth",
   createProxyMiddleware({
     target: "http://auth-service:3001",
     changeOrigin: true,
+    pathRewrite: { "^/auth": "" }, // Corta o "/auth" antes de mandar pro serviço
   }),
 );
+
 app.use(
   "/users",
   createProxyMiddleware({
     target: "http://user-service:3002",
     changeOrigin: true,
+    pathRewrite: { "^/users": "" }, // Corta o "/users" antes de mandar pro serviço
   }),
 );
 
